@@ -7,74 +7,38 @@ namespace BoxesProject
     class Program
     {
         static void Main(string[] args)
-        {
-            Storage storage = new Storage();
+         {
+            Storage storage = new Storage(10);
 
             // Inserting boxes into the storage
-            storage.AddBox(new Box(11.0, 20.0));
-            storage.AddBox(new Box(11.0, 22.0));
-            storage.AddBox(new Box(11.0, 19.0));
-            storage.AddBox(new Box(15.0, 25.0));
-            storage.AddBox(new Box(12.0, 34.0));
-            storage.AddBox(new Box(8.0, 15.0));
-            storage.AddBox(new Box(22, 34.0));
-            storage.AddBox(new Box(22, 17.0));
-            storage.AddBox(new Box(44.0, 31.0));
-            storage.AddBox(new Box(18.0, 15.0));
+            //  public Box(double x, double y, int quantity, int minQuantity, int maxQuantity)
 
-            // Generate the PlantUML code for the tree
-            string plantUmlCode = GeneratePlantUml(storage.avlTree.root);
+            storage.AddBox(new Box(15.0, 25.0, 4, 5, 20));
+            storage.AddBox(new Box(11.0, 20.0, 8, 5, 20));
+            storage.AddBox(new Box(11.0, 20.0, 3, 5, 20));
+            storage.AddBox(new Box(8.0, 15.0, 7, 5, 20));
+            storage.AddBox(new Box(15.0, 28.0, 7, 5, 20));
+            storage.AddBox(new Box(15.0, 30, 8, 5, 20));
+            storage.AddBox(new Box(15.0, 21, 7, 5, 20));
+            storage.AddBox(new Box(11.0, 22.0, 7, 5, 20));
+            storage.AddBox(new Box(15.0, 258.0, 7, 5, 20));
+            storage.AddBox(new Box(12.0, 34.0, 7, 5, 20));
+            storage.AddBox(new Box(11.0, 22.0, 22, 5, 20));
+            storage.AddBox(new Box(14.0, 27.0, 6, 5, 20));
+            storage.AddBox(new Box(14.0, 44, 6, 5, 20));
+            storage.AddBox(new Box(16.0, 29.0, 5, 5, 20));
+            storage.AddBox(new Box(10.0, 20.0, 5, 5, 20));
+            storage.AddBox(new Box(15.0, 30.0, 7, 5, 20));
+            storage.AddBox(new Box(20.0, 40.0, 8, 5, 20));
 
-            // Save the PlantUML code to a file
-            string plantUmlFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tree.uml");
-            File.WriteAllText(plantUmlFilePath, plantUmlCode);
+            Box? box = storage.FindBestBoxMatch(13.6, 27.2);
 
-            // Generate the image using PlantUML command-line tool
-            string outputImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tree.png");
-            string plantUmlJarPath = @"C:\Users\itama\Downloads\plantuml-1.2023.9.jar";
-            string arguments = $"-tpng \"{plantUmlFilePath}\" -o \"{outputImagePath}\"";
 
-            var processStartInfo = new ProcessStartInfo("java", $"-jar \"{plantUmlJarPath}\" {arguments}")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            Console.WriteLine($"Found that box: {box}");
 
-            using (var process = Process.Start(processStartInfo))
-            {
-                process.WaitForExit();
-            }
+            Console.WriteLine("Hello New");
 
-            Console.WriteLine("Output Path: " + outputImagePath);
-
-            Console.WriteLine("Image generated successfully.");
         }
 
-        static string GeneratePlantUml(Node node)
-        {
-            if (node == null)
-                return string.Empty;
-
-            string plantUml = "@startuml\n";
-            GeneratePlantUmlRecursive(node, ref plantUml);
-            plantUml += "@enduml";
-            return plantUml;
-        }
-
-        static void GeneratePlantUmlRecursive(Node node, ref string plantUml)
-        {
-            if (node == null)
-                return;
-
-            plantUml += $"class {node.Box}\n";
-            if (node.Left != null)
-                plantUml += $"{node.Box} --> {node.Left.Box}\n";
-            if (node.Right != null)
-                plantUml += $"{node.Box} --> {node.Right.Box}\n";
-
-            GeneratePlantUmlRecursive(node.Left, ref plantUml);
-            GeneratePlantUmlRecursive(node.Right, ref plantUml);
-        }
     }
 }

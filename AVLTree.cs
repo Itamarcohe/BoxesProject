@@ -1,79 +1,121 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace BoxesProject
 {
     public class AVLTree
     {
         public Node root;
-        private bool sortByX;
-
-        public AVLTree(bool sortByX = true)
+        public AVLTree()
         {
-            this.sortByX = sortByX;
+            root = null;
         }
 
-
-        public void Insert(Box box)
+        private int Height(Node node)
         {
-            root = Insert(root, box);
+            return node == null ? 0 : node.Height;
+
         }
 
-        private Node Insert(Node node, Box box)
+        private int BalanceFactor(Node node)
+        {
+            return node == null ? 0 : Height(node.Left) - Height(node.Right);
+        }
+
+        private Node LeftRotate(Node node)
+        {
+            Node newRoot = node.Right;
+            node.Right = newRoot.Left;
+            newRoot.Left = node;
+
+            node.Height = 1 + Math.Max(Height(node.Left), Height(node.Right));
+            newRoot.Height = 1 + Math.Max(Height(newRoot.Left), Height(newRoot.Right));
+
+            return newRoot;
+        }
+
+        private Node RightRotate(Node node)
+        {
+            Node newRoot = node.Left;
+            node.Left = newRoot.Right;
+            newRoot.Right = node;
+
+            node.Height = 1 + Math.Max(Height(node.Left), Height(node.Right));
+            newRoot.Height = 1 + Math.Max(Height(newRoot.Left), Height(newRoot.Right));
+
+            return newRoot;
+        }
+
+        public void Insert(Box newBox)
+        {
+            root = Insert(root, newBox);
+        }
+
+        private Node Insert(Node node, Box newBox)
         {
             if (node == null)
-                return new Node(box, sortByX);
+            {
+                //In case no other node at all
+                return new Node(newBox);
+            }
 
-            if (sortByX && box.X < node.Box.X)
+            if (newBox.X < node.MyX)
             {
-                node.Left = Insert(node.Left, box);
+                node.Left = Insert(node.Left, newBox);
             }
-            else if (!sortByX && box.Y < node.Box.Y)
+
+            else if (newBox.X > node.MyX)
             {
-                node.Left = Insert(node.Left, box);
-            }
-            else if (sortByX && box.X > node.Box.X)
-            {
-                node.Right = Insert(node.Right, box);
-            }
-            else if (!sortByX && box.Y > node.Box.Y)
-            {
-                node.Right = Insert(node.Right, box);
+                node.Right = Insert(node.Right, newBox);
             }
             else
             {
-                // Box with the same X or Y value, insert it into the BoxTree
-                node.BoxTree.Insert(box);
-                return node;
+                // Possibliy here is duplicated we will check that now
+                Console.WriteLine("Entered Duplicated");
+                if (node.Box.Y == newBox.Y)
+                {
+                    node.Box.Quantity += newBox.Quantity;
+                    if (node.Box.MaxQuantity < node.Box.Quantity)
+                    {
+                        //Here we will show a dialog content box telling the user
+                        //we reached the limit of the max Quantity box of this one and we will just
+                        //update the quantity to the maxium
+                        node.Box.Quantity = node.Box.MaxQuantity;
+                    }
+                } 
+                else {
+                    node.InsertBox(newBox);
+
+                }
+                Console.WriteLine($"MyX : {node.MyX} new box: {newBox.X}");
+                Console.WriteLine($"Boxx: {node.Box}");
+                return node; // Duplicate keys are not allowed in AVL tree
             }
 
-            // Update the height of the node
-            node.Height = Math.Max(Height(node.Left), Height(node.Right)) + 1;
+            node.Height = 1 + Math.Max(Height(node.Left), Height(node.Right));
 
-            // Perform AVL rotations if necessary
-            int balance = GetBalance(node);
+            int balance = BalanceFactor(node);
 
             // Left-Left case
-            if (balance > 1 && (sortByX ? box.X : box.Y) < (sortByX ? node.Left.Box.X : node.Left.Box.Y))
+            if (balance > 1 && newBox.X < node.Left.MyX)
             {
                 return RightRotate(node);
             }
 
             // Right-Right case
-            if (balance < -1 && (sortByX ? box.X : box.Y) > (sortByX ? node.Right.Box.X : node.Right.Box.Y))
+            if (balance < -1 && newBox.X > node.Right.MyX)
             {
                 return LeftRotate(node);
             }
 
             // Left-Right case
-            if (balance > 1 && (sortByX ? box.X : box.Y) > (sortByX ? node.Left.Box.X : node.Left.Box.Y))
+            if (balance > 1 && newBox.X > node.Left.MyX)
             {
                 node.Left = LeftRotate(node.Left);
                 return RightRotate(node);
             }
 
             // Right-Left case
-            if (balance < -1 && (sortByX ? box.X : box.Y) < (sortByX ? node.Right.Box.X : node.Right.Box.Y))
+            if (balance < -1 && newBox.X < node.Right.MyX)
             {
                 node.Right = RightRotate(node.Right);
                 return LeftRotate(node);
@@ -82,213 +124,20 @@ namespace BoxesProject
             return node;
         }
 
-        public Box GetBestMatch(double requestedValue, double percentageDifference, bool sortByX)
+        public void InOrderTraversal()
         {
-            Node targetNode = SearchClosest(root, requestedValue);
-
-            if (targetNode == null)
-                return null;
-
-            double closestValue;
-            if (sortByX)
-            {
-                closestValue = targetNode.Box.X;
-            }
-            else
-            {
-                closestValue = targetNode.BoxTree.FindClosestGreater(requestedValue);
-            }
-
-            if (closestValue != default(double))
-            {
-                double difference = Math.Abs(requestedValue - closestValue);
-                double maxDifference = (percentageDifference / 100) * requestedValue;
-
-                if (difference <= maxDifference)
-                {
-                    if (sortByX)
-                    {
-                        return targetNode.Box;
-                    }
-                    else
-                    {
-                        return targetNode.BoxTree.Search(closestValue);
-                    }
-                }
-            }
-
-            return null;
+            InOrderTraversal(root);
+            Console.WriteLine();
         }
 
-        public Box Search(double value)
+        private void InOrderTraversal(Node node)
         {
-            return Search(root, value);
-        }
-
-        private Box Search(Node node, double value)
-        {
-            if (node == null)
-                return null;
-
-            int comparisonResult;
-            if (sortByX)
+            if (node != null)
             {
-                comparisonResult = value.CompareTo(node.Box.X);
-            }
-            else
-            {
-                comparisonResult = value.CompareTo(node.Box.Y);
-            }
-
-            if (comparisonResult == 0)
-            {
-                return node.Box;
-            }
-            else if (comparisonResult < 0)
-            {
-                return Search(node.Left, value);
-            }
-            else
-            {
-                return Search(node.Right, value);
+                InOrderTraversal(node.Left);
+                Console.Write(node.MyX + " ");
+                InOrderTraversal(node.Right);
             }
         }
-
-        private Node SearchClosest(Node node, double value)
-        {
-            if (node == null)
-                return null;
-
-            if (value < (sortByX ? node.Box.X : node.Box.Y))
-            {
-                if (node.Left != null)
-                    return SearchClosest(node.Left, value);
-                else
-                    return node;
-            }
-            else if (value > (sortByX ? node.Box.X : node.Box.Y))
-            {
-                if (node.Right != null)
-                    return SearchClosest(node.Right, value);
-                else
-                    return node;
-            }
-            else
-            {
-                return node;
-            }
-        }
-
-
-        public Box FindClosestBaseSize(double requestedSize, double percentageDifference)
-        {
-            return FindClosestBaseSize(root, requestedSize, percentageDifference);
-        }
-
-        private Box FindClosestBaseSize(Node node, double requestedSize, double percentageDifference)
-        {
-            if (node == null)
-                return null;
-
-            double baseSize = node.Box.X;
-            double difference = Math.Abs(baseSize - requestedSize);
-            double maxDifference = (percentageDifference / 100) * requestedSize;
-
-            if (difference <= maxDifference)
-            {
-                // Found a base size within the acceptable difference range
-                return node.Box;
-            }
-            else if (requestedSize < baseSize)
-            {
-                // Traverse left subtree
-                return FindClosestBaseSize(node.Left, requestedSize, percentageDifference);
-            }
-            else
-            {
-                // Traverse right subtree
-                return FindClosestBaseSize(node.Right, requestedSize, percentageDifference);
-            }
-        }
-
-        private int Height(Node node)
-        {
-            if (node == null)
-                return 0;
-
-            return node.Height;
-        }
-
-        private int GetBalance(Node node)
-        {
-            if (node == null)
-                return 0;
-
-            return Height(node.Left) - Height(node.Right);
-        }
-
-        private Node RightRotate(Node y)
-        {
-            Node x = y.Left;
-            Node T2 = x.Right;
-
-            x.Right = y;
-            y.Left = T2;
-
-            y.Height = Math.Max(Height(y.Left), Height(y.Right)) + 1;
-            x.Height = Math.Max(Height(x.Left), Height(x.Right)) + 1;
-
-            return x;
-        }
-
-        private Node LeftRotate(Node x)
-        {
-            Node y = x.Right;
-            Node T2 = y.Left;
-
-            y.Left = x;
-            x.Right = T2;
-
-            x.Height = Math.Max(Height(x.Left), Height(x.Right)) + 1;
-            y.Height = Math.Max(Height(y.Left), Height(y.Right)) + 1;
-
-            return y;
-        }
-
-        public double FindClosestGreater(double value)
-        {
-            return FindClosestGreater(root, value, double.MaxValue);
-        }
-
-        private double FindClosestGreater(Node node, double value, double closest)
-        {
-            if (node == null)
-                return closest;
-
-            int comparisonResult;
-            if (sortByX)
-            {
-                comparisonResult = value.CompareTo(node.Box.X);
-            }
-            else
-            {
-                comparisonResult = value.CompareTo(node.Box.Y);
-            }
-
-            if (comparisonResult == 0)
-            {
-                return node.Box.X;
-            }
-            else if (comparisonResult < 0)
-            {
-                return FindClosestGreater(node.Left, value, node.Box.X);
-            }
-            else
-            {
-                return FindClosestGreater(node.Right, value, closest);
-            }
-        }
-
-
     }
 }
